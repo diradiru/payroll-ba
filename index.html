@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meja Payroll BA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Carlito:wght@400;700&family=Sofia+Sans+Condensed:wght@800&family=Instrument+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE training game for payroll staff: one shift, nine BA, solved in a real-feeling Excel
+   IDEA the HO desk screen: a BA PDF in WPS on the left, Rekap Rapel workbook open on the right
+   PICTURE the Excel window itself: name box, fx bar with point-mode references, grid, sheet tabs, status bar
+   COLOUR Excel green #217346 chrome, white grid, yellow input cells, red rubber stamps for verdicts
+   TYPE Carlito (Calibri metrics) in the grid, Instrument Sans for UI, Sofia Sans Condensed 800 for titles
+   LAYOUT laptop: PDF + stamps left, Excel + task list right; under 1100px everything stacks */
+:root{color-scheme:light dark;--bg:light-dark(#f3f2f1,#151515);--ink:light-dark(#1b1b1b,#ececec);--mut:light-dark(#5f5f5f,#a8a8a8);--win:light-dark(#ffffff,#1f1f1f);--grid:light-dark(#d9d9d9,#3a3a3a);--hd:light-dark(#efefef,#2a2a2a);--hdsel:light-dark(#d3e8dc,#244a35);--green:#217346;--gdk:#185c37;--sel:light-dark(#217346,#5fcf8f);--yel:light-dark(#fff2cc,#4b4120);--blu:light-dark(#ddebf7,#203447);--gold:light-dark(#ffd966,#6b5a18);--red:#d83b01;--ok:light-dark(#107c41,#5fcf8f);--bad:light-dark(#c50f1f,#ff7a7a);--pt:#1c6fd1}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 "Instrument Sans",system-ui,sans-serif;overflow-x:clip}
+button,input,select{font:inherit;color:inherit}
+h1,h2,.big{font-family:"Sofia Sans Condensed",system-ui,sans-serif;font-weight:800;letter-spacing:-.02em;line-height:1.05;margin:0}
+.hud{background:var(--green);color:#fff;padding:12px max(3vw,16px);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 18px;align-items:end}
+.hud h1{font-size:clamp(28px,4.4vw,42px)}
+.hud p{margin:2px 0 0;font-size:14px;opacity:.92}
+.score{text-align:right}.score .big{font-size:clamp(32px,5vw,50px)}.score small{display:block;font-size:13px;opacity:.9}
+.pips{grid-column:1/-1;display:flex;gap:5px}
+.pip{flex:1;height:8px;border-radius:2px;background:rgba(255,255,255,.3)}.pip.cur{background:#fff}.pip.g{background:#0b3d22}.pip.m{background:#a4262c}
+.wrap{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.55fr);gap:16px;padding:16px max(3vw,16px) 24px;max-width:1500px;margin:0 auto}
+.col{display:grid;gap:14px;align-content:start}
+.pdf{background:#3b3b3b;border-radius:8px;overflow:hidden;border:1px solid #2a2a2a}
+.pdfbar{display:flex;justify-content:space-between;gap:8px;color:#eee;font-size:13px;padding:7px 12px;background:#2b2b2b}
+.pdfbar b{color:#ff8f6b;font-weight:700}
+.paper{background:#fffdf8;color:#1a1a1a;margin:12px;padding:18px clamp(14px,2.4vw,26px) 20px;font:14px/1.5 "Carlito",Calibri,sans-serif;position:relative;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+.kop{display:flex;justify-content:space-between;gap:10px;border-bottom:2px solid #1a1a1a;padding-bottom:6px;margin-bottom:10px;font-size:12.5px}
+.kop b{font:800 19px "Sofia Sans Condensed",sans-serif;color:#d93a10}
+.paper h2{font-size:21px;text-align:center;margin:4px 0 10px;text-decoration:underline;text-underline-offset:4px}
+.paper p{margin:0 0 8px}
+.paper table{border-collapse:collapse;width:100%;margin:4px 0 10px}
+.paper td{border:1px solid #b9b1a6;padding:4px 7px;vertical-align:top}.paper td:first-child{width:40%;background:#f3eee6;font-weight:700}
+.ttd{display:flex;gap:12px;font-size:12.5px;margin-top:10px}.ttd span{flex:1}.ttd i{display:block;font:22px "Brush Script MT",cursive;color:#2a3a8c;margin:2px 0}
+.lamp{font-size:12.5px;color:#666;border-top:1px dashed #b9b1a6;padding-top:6px;margin-top:8px}
+.mark{position:absolute;right:18px;bottom:64px;border:4px solid;border-radius:6px;padding:3px 12px;font:800 24px "Sofia Sans Condensed",sans-serif;transform:rotate(-12deg);opacity:.85;pointer-events:none}
+.card2{background:var(--win);border:1px solid var(--grid);border-radius:8px;padding:14px}
+.card2 h2{font-size:22px;margin-bottom:4px}.card2 .q{margin:0 0 10px;color:var(--mut);font-size:14px}
+.stamps{display:grid;gap:8px}
+.stamp{min-height:50px;border:3px solid currentColor;border-radius:8px;background:var(--win);font:800 19px "Sofia Sans Condensed",sans-serif;cursor:pointer;text-align:left;padding:6px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;transition:transform .12s}
+.stamp small{font:500 13px "Instrument Sans",sans-serif;color:var(--mut)}
+.stamp.p{color:var(--ok)}.stamp.t{color:var(--bad)}.stamp.l{color:var(--red)}
+.stamp:hover{transform:rotate(-1deg)}.stamp:active{transform:rotate(-3deg) scale(.98)}.stamp:disabled{opacity:.38;cursor:default;transform:none}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.gh{min-height:44px;border:1px solid var(--grid);background:var(--win);border-radius:6px;padding:6px 12px;cursor:pointer;font-weight:600;font-size:14px}.gh:hover{border-color:var(--ink)}
+.hint{margin-top:10px;font-size:14px;border-left:4px solid var(--red);padding:6px 10px;background:var(--bg)}
+.xl{background:var(--win);border:1px solid var(--grid);border-radius:8px;overflow:hidden;display:flex;flex-direction:column}
+.xtitle{background:var(--green);color:#fff;display:flex;justify-content:space-between;gap:8px;padding:6px 12px;font-size:13px}
+.xmenu{display:flex;gap:16px;padding:5px 12px;font-size:13px;color:var(--mut);border-bottom:1px solid var(--grid);overflow:hidden;white-space:nowrap}.xmenu b{color:var(--green)}
+.fxrow{display:flex;align-items:stretch;border-bottom:1px solid var(--grid);font:15px "Carlito",Calibri,sans-serif}
+#nb{width:78px;border:0;border-right:1px solid var(--grid);padding:6px 8px;background:var(--win);font:15px "Carlito",Calibri,sans-serif}
+.fxi{display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--mut);border-right:1px solid var(--grid);font-style:italic;white-space:nowrap}
+.fxi button{border:0;background:none;cursor:pointer;min-width:26px;min-height:34px;font-style:normal;color:var(--mut);font-size:16px}
+#fx{flex:1;border:0;padding:6px 10px;background:var(--win);font:16px "Carlito",Calibri,sans-serif;min-height:38px}
+#fx:focus{outline:2px solid var(--sel);outline-offset:-2px}
+#fx[readonly]{color:var(--mut)}
+.tip{font-size:13px;padding:4px 10px;border-bottom:1px solid var(--grid);background:light-dark(#fffbe6,#2b2716);display:none}.tip.on{display:block}.tip b{color:var(--green)}
+.kets{display:none;flex-wrap:wrap;gap:6px;padding:6px 10px;border-bottom:1px solid var(--grid);background:var(--hd);font-size:13px}.kets.on{display:flex}
+.kets button{border:1px solid var(--grid);background:var(--win);border-radius:4px;padding:4px 8px;cursor:pointer;min-height:32px;font:13px "Carlito",Calibri,sans-serif}.kets button:hover{border-color:var(--sel)}
+.snote{font-size:13px;padding:4px 10px;color:var(--mut);border-bottom:1px solid var(--grid);overflow-wrap:anywhere}
+.gw{overflow:auto;height:clamp(300px,52vh,470px);position:relative;user-select:none;-webkit-user-select:none}
+table.g{border-collapse:separate;border-spacing:0;font:14px "Carlito",Calibri,sans-serif;table-layout:fixed}
+.g th,.g td{border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);height:22px;padding:0 5px;white-space:nowrap;overflow:hidden;text-overflow:clip}
+.g thead th{position:sticky;top:0;background:var(--hd);color:var(--mut);font-weight:400;text-align:center;z-index:2;cursor:s-resize}
+.g tbody th{position:sticky;left:0;background:var(--hd);color:var(--mut);font-weight:400;text-align:center;z-index:1;width:38px}
+.g thead th.cx{left:0;z-index:3;cursor:default}
+.g th.on{background:var(--hdsel);color:var(--ink);font-weight:700}
+.g td{background:var(--win);cursor:cell}
+.g td.n{text-align:right;font-variant-numeric:tabular-nums}
+.g td.h1{font-weight:700;background:light-dark(#e2efda,#24372a)}
+.g td.bp{background:var(--yel);font-weight:700;text-align:center}.g td.bs{background:var(--blu);font-weight:700;text-align:center}
+.g td.hdA{background:var(--hd);font-weight:700;text-align:center}.g td.hdP{background:var(--yel);font-weight:700;text-align:center}.g td.hdS{background:var(--blu);font-weight:700;text-align:center}.g td.hdU{background:var(--gold);font-weight:700;text-align:center}
+.g td.tk{background:var(--yel);box-shadow:inset 0 0 0 1px light-dark(#e0b100,#a88a1c)}
+.g td.cur{background:light-dark(#f7fbf8,#1c2820)}
+.g td.rg{background:color-mix(in srgb,var(--sel) 14%,var(--win))}
+.g td.tk.rg{background:color-mix(in srgb,var(--sel) 18%,var(--yel))}
+.g td.act{outline:2px solid var(--sel);outline-offset:-2px}
+.g td.pt{outline:2px dashed var(--pt);outline-offset:-2px}
+.g td.e{color:var(--bad)}
+.tabsb{display:flex;align-items:stretch;border-top:1px solid var(--grid);background:var(--hd);overflow-x:auto}
+.stab{border:0;border-right:1px solid var(--grid);background:none;padding:6px 14px;min-height:38px;cursor:pointer;white-space:nowrap;font:14px "Carlito",Calibri,sans-serif;color:var(--mut)}
+.stab.on{background:var(--win);color:var(--green);font-weight:700;box-shadow:inset 0 -3px 0 var(--green)}
+.stab.seen::after{content:" \2022";color:var(--ok)}
+.sbar{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:4px 10px;background:var(--hd);border-top:1px solid var(--grid);color:var(--mut)}
+.sbar .warn{color:var(--bad);font-weight:600}
+.tasks ol{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.tasks li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--grid);border-radius:6px;padding:6px 8px;background:var(--bg)}
+.tasks .ad{font:700 15px "Carlito",Calibri,sans-serif;background:var(--yel);border:1px solid light-dark(#e0b100,#a88a1c);border-radius:4px;padding:6px 8px;cursor:pointer;min-width:48px;min-height:36px}
+.tasks .st{font-size:12px;color:var(--mut);display:block}.tasks .st.f{color:var(--ok)}
+.tasks code{font:14px "Carlito",Calibri,sans-serif;background:var(--win);border:1px solid var(--grid);padding:1px 5px;border-radius:3px;overflow-wrap:anywhere}
+.go{width:100%;min-height:48px;border:0;border-radius:6px;background:var(--green);color:#fff;font:800 20px "Sofia Sans Condensed",sans-serif;cursor:pointer;margin-top:10px}.go:disabled{opacity:.4;cursor:default}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:16px;z-index:9}.ov.on{display:flex}
+.card{background:var(--win);border-radius:10px;max-width:680px;width:100%;max-height:92vh;overflow:auto;padding:20px clamp(16px,4vw,28px);border-top:8px solid var(--green)}
+.verdict{display:inline-block;border:4px solid;border-radius:6px;padding:2px 14px;font:800 32px "Sofia Sans Condensed",sans-serif;transform:rotate(-4deg);margin:2px 0 10px;animation:th .35s ease-out}
+@keyframes th{from{transform:rotate(-14deg) scale(1.6);opacity:0}to{transform:rotate(-4deg) scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.verdict{animation:none}.stamp{transition:none}}
+.br{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0 12px}.br td{border-bottom:1px solid var(--grid);padding:6px 4px;vertical-align:top}.br td:last-child{text-align:right;white-space:nowrap;font-weight:700}
+.br code{font:14px "Carlito",Calibri,sans-serif;overflow-wrap:anywhere}
+.y{color:var(--ok)}.x{color:var(--bad)}
+.rule{background:var(--bg);border-radius:6px;padding:10px 12px;font-size:14px;margin-bottom:12px}
+.end .big{font-size:clamp(56px,12vw,92px);color:var(--green)}
+.foot{max-width:1500px;margin:0 auto;padding:0 max(3vw,16px) 24px;font-size:13px;color:var(--mut)}
+@media(max-width:1100px){.wrap{grid-template-columns:minmax(0,1fr)}.gw{height:clamp(300px,58vh,520px)}}
+@media(max-width:520px){.xmenu{display:none}.fxi span{display:none}#nb{width:62px}}
+</style>
+</head>
+<body>
+<header class="hud">
+  <div><h1>Meja Payroll BA</h1><p id="sub">Kasus 1 dari 9</p></div>
+  <div class="score"><span class="big" id="pts">0</span><small id="rank">poin · Trainee</small></div>
+  <div class="pips" id="pips"></div>
+</header>
+<main class="wrap">
+  <div class="col">
+    <section class="pdf" aria-label="Dokumen BA"><div class="pdfbar"><span id="pdfn">BA.pdf</span><b>WPS PDF</b></div><article class="paper" id="paper"></article></section>
+    <section class="card2">
+      <h2>Cap BA</h2>
+      <p class="q">Cocokkan isi BA dengan sheet di Excel, lalu pilih cap.</p>
+      <div class="stamps">
+        <button class="stamp p" data-d="proses">PROSES <small>masuk Rekap</small></button>
+        <button class="stamp t" data-d="tidak">TIDAK PROSES <small>hapus dari Rekap</small></button>
+        <button class="stamp l" data-d="lengkapi">MINTA KELENGKAPAN <small>tanya area</small></button>
+      </div>
+      <div class="btns"><button class="gh" id="bHint">Lihat aturan (−10)</button><button class="gh" id="bReset">Ulang dari awal</button></div>
+      <div id="hint"></div>
+    </section>
+  </div>
+  <div class="col">
+    <section class="xl" aria-label="Excel">
+      <div class="xtitle"><span>Rekap Rapel November 2026.xlsx</span><span>Excel</span></div>
+      <div class="xmenu"><b>Beranda</b><span>Sisipkan</span><span>Tata Letak Halaman</span><span>Rumus</span><span>Data</span><span>Tinjau</span><span>Tampilan</span></div>
+      <div class="fxrow"><input id="nb" readonly aria-label="Kotak nama" value="A1"><div class="fxi"><button id="fxX" title="Batal" aria-label="Batal">✕</button><button id="fxV" title="Masukkan" aria-label="Masukkan">✓</button><span>fx</span></div><input id="fx" autocomplete="off" spellcheck="false" aria-label="Bilah rumus" readonly></div>
+      <div class="tip" id="tip"></div>
+      <div class="kets" id="kets"></div>
+      <div class="snote" id="snote"></div>
+      <div class="gw" id="gw"></div>
+      <div class="tabsb" id="tabs"></div>
+      <div class="sbar"><span id="mode">Siap</span><span id="agg"></span></div>
+    </section>
+    <section class="card2 tasks">
+      <h2>Tugas sel</h2>
+      <p class="q" id="tq"></p>
+      <ol id="tl"></ol>
+      <button class="go" id="send" disabled>Kirim ke Rekap</button>
+    </section>
+  </div>
+</main>
+<p class="foot">Latihan berdasarkan SOP Pengolahan BA dan Rekap Rapel November 2026. Semua nama, NIK, dan angka fiktif. Rumus memakai pemisah koma atau titik koma. Di file asli, VLOOKUP ke workbook lain tertulis seperti <code>'[Report Payroll Non Telkom Oktober 2026.xlsx]ok'!$B:$L</code>; di sini cukup <code>ok!B:L</code> (awalan [nama file] juga diterima).</p>
+<div class="ov" id="ov" role="dialog" aria-modal="true"><div class="card" id="card"></div></div>
+<script>
+{
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const L=c=>{let s="";while(c>0){const m=(c-1)%26;s=String.fromCharCode(65+m)+s;c=(c-m-1)/26}return s};
+const CN=s=>{let n=0;for(const ch of s.toUpperCase())n=n*26+ch.charCodeAt(0)-64;return n};
+const Err=e=>({err:e}),isE=v=>v!==null&&typeof v==="object"&&"err" in v;
+const REK="rapel ok";
+const nf=n=>Math.abs(n).toLocaleString("en-US",{maximumFractionDigits:2});
+
+/* ---------- formula engine ---------- */
+const TOK=[["ws",/\s+/y],["str",/"((?:[^"]|"")*)"/y],["fn",/([A-Za-z][A-Za-z0-9.]*)\s*\(/y],
+ ["ref",/((?:'(?:[^']|'')+'|[A-Za-z_][A-Za-z0-9_.]*)!)?(\$?[A-Za-z]{1,3}\$?\d+(?::\$?[A-Za-z]{1,3}\$?\d+)?|\$?[A-Za-z]{1,3}:\$?[A-Za-z]{1,3})(?![A-Za-z0-9_(!])/y],
+ ["bool",/(TRUE|FALSE)(?![A-Za-z0-9_(])/iy],["num",/\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/y],["op",/<>|<=|>=|[-+*\/^&=<>(),;%]/y]];
+function tok(s){const out=[];let i=0;while(i<s.length){let hit=false;for(const [k,re] of TOK){re.lastIndex=i;const m=re.exec(s);if(m){i=re.lastIndex;hit=true;if(k!=="ws")out.push({k,m});break}}if(!hit)throw new Error("tok")}return out}
+function mkref(sh,ref){let name=null;if(sh){name=sh.slice(0,-1);if(name[0]==="'")name=name.slice(1,-1).replace(/''/g,"'");name=name.replace(/^\[[^\]]*\]/,"")}
+ const [a,b]=ref.replace(/\$/g,"").toUpperCase().split(":");const pa=a.match(/^([A-Z]+)(\d*)$/),pb=(b||a).match(/^([A-Z]+)(\d*)$/);
+ const col=!pa[2];return {k:"ref",sh:name,col,c1:CN(pa[1]),r1:+pa[2]||0,c2:CN(pb[1]),r2:+pb[2]||0}}
+const PC=new Map();
+function parse(src){if(PC.has(src))return PC.get(src);const t=tok(src);let p=0;const isop=v=>t[p]&&t[p].k==="op"&&t[p].m[0]===v;
+ const cmp=()=>{let a=cat();while(t[p]&&t[p].k==="op"&&["=","<>","<",">","<=",">="].includes(t[p].m[0])){const op=t[p++].m[0];a={k:"bin",op,a,b:cat()}}return a};
+ const cat=()=>{let a=add();while(isop("&")){p++;a={k:"bin",op:"&",a,b:add()}}return a};
+ const add=()=>{let a=mul();while(isop("+")||isop("-")){const op=t[p++].m[0];a={k:"bin",op,a,b:mul()}}return a};
+ const mul=()=>{let a=pw();while(isop("*")||isop("/")){const op=t[p++].m[0];a={k:"bin",op,a,b:pw()}}return a};
+ const pw=()=>{let a=un();while(isop("^")){p++;a={k:"bin",op:"^",a,b:un()}}return a};
+ const un=()=>{if(isop("-")){p++;return {k:"neg",a:un()}}if(isop("+")){p++;return un()}let a=pri();while(isop("%")){p++;a={k:"bin",op:"/",a,b:{k:"v",v:100}}}return a};
+ const pri=()=>{const x=t[p++];if(!x)throw new Error("end");
+  if(x.k==="num")return {k:"v",v:+x.m[0]};if(x.k==="str")return {k:"v",v:x.m[1].replace(/""/g,'"')};
+  if(x.k==="bool")return {k:"v",v:x.m[1].toUpperCase()==="TRUE"};if(x.k==="ref")return mkref(x.m[1],x.m[2]);
+  if(x.k==="fn"){const n=x.m[1].toUpperCase(),args=[];if(isop(")")){p++;return {k:"fn",n,args}}
+   for(;;){if(isop(",")||isop(";")||isop(")"))args.push({k:"empty"});else args.push(cmp());if(isop(")")){p++;break}if(isop(",")||isop(";")){p++;continue}throw new Error("args")}return {k:"fn",n,args}}
+  if(x.k==="op"&&x.m[0]==="("){const e=cmp();if(!isop(")"))throw new Error(")");p++;return e}
+  throw new Error("bad")};
+ const e=cmp();if(p<t.length)throw new Error("extra");PC.set(src,e);return e}
+let BOOK=new Map(),MEMO=new Map(),STACK=new Set();
+const num=v=>{if(isE(v))return v;if(v===null)return 0;if(typeof v==="boolean")return +v;if(typeof v==="number")return v;const s=String(v).trim();return s!==""&&isFinite(+s)?+s:Err("#VALUE!")};
+const str=v=>v===null?"":typeof v==="boolean"?(v?"TRUE":"FALSE"):String(v);
+const truthy=v=>{if(isE(v))return v;if(typeof v==="boolean")return v;if(typeof v==="number")return v!==0;if(v===null)return false;const s=String(v).toUpperCase();return s==="TRUE"?true:s==="FALSE"?false:Err("#VALUE!")};
+const eq=(a,b)=>typeof a==="number"&&typeof b==="number"?a===b:typeof a==="string"&&typeof b==="string"?a.toLowerCase()===b.toLowerCase():false;
+function sc(v){if(v&&v.rg){if(v.r1===v.r2&&v.c1===v.c2)return cv(v.sh,v.r1,v.c1);return Err("#VALUE!")}return v}
+function ev(n,ctx){switch(n.k){
+ case "v":return n.v;case "empty":return null;
+ case "ref":{const sh=n.sh?BOOK.get(n.sh.toLowerCase()):ctx;if(!sh)return Err("#REF!");return n.col?{rg:1,sh,r1:1,r2:sh.nr,c1:Math.min(n.c1,n.c2),c2:Math.max(n.c1,n.c2)}:{rg:1,sh,r1:Math.min(n.r1,n.r2),r2:Math.max(n.r1,n.r2),c1:Math.min(n.c1,n.c2),c2:Math.max(n.c1,n.c2)}}
+ case "neg":{const v=num(sc(ev(n.a,ctx)));return isE(v)?v:-v}
+ case "bin":{const a=sc(ev(n.a,ctx)),b=sc(ev(n.b,ctx));if(isE(a))return a;if(isE(b))return b;
+  if(n.op==="&")return str(a)+str(b);
+  if(["=","<>","<",">","<=",">="].includes(n.op)){let x=a===null?(typeof b==="string"?"":0):a,y=b===null?(typeof a==="string"?"":0):b;let c;if(typeof x==="number"&&typeof y==="number")c=x-y;else{x=str(x).toLowerCase();y=str(y).toLowerCase();c=x<y?-1:x>y?1:0}
+   return {"=":c===0,"<>":c!==0,"<":c<0,">":c>0,"<=":c<=0,">=":c>=0}[n.op]}
+  const x=num(a),y=num(b);if(isE(x))return x;if(isE(y))return y;
+  if(n.op==="+")return x+y;if(n.op==="-")return x-y;if(n.op==="*")return x*y;if(n.op==="^")return x**y;return y===0?Err("#DIV/0!"):x/y}
+ case "fn":return fn(n,ctx)}}
+function vals(n,ctx,out){const v=ev(n,ctx);if(v&&v.rg){for(let r=v.r1;r<=v.r2;r++)for(let c=v.c1;c<=v.c2;c++)out.push({v:cv(v.sh,r,c),rg:1})}else out.push({v:sc(v),rg:0});return out}
+function fn(n,ctx){const A=n.args,N=n.n,one=i=>A[i]&&A[i].k!=="empty"?sc(ev(A[i],ctx)):null;
+ if(N==="IF"){const t=truthy(one(0));if(isE(t))return t;const v=t?one(1):one(2);return A[t?1:2]?v:t}
+ if(N==="IFERROR"){const v=one(0);return isE(v)?one(1):v}
+ if(["SUM","MIN","MAX","AVERAGE","COUNT","COUNTA"].includes(N)){const xs=[];A.forEach(a=>vals(a,ctx,xs));const ns=[];let ca=0;
+  for(const x of xs){if(x.v!==null)ca++;if(N==="COUNTA")continue;if(isE(x.v))return x.v;if(x.rg){if(typeof x.v==="number")ns.push(x.v)}else{const k=num(x.v);if(isE(k))return k;ns.push(k)}}
+  if(N==="COUNTA")return ca;if(N==="COUNT")return ns.length;if(N==="SUM")return ns.reduce((a,b)=>a+b,0);if(!ns.length)return N==="AVERAGE"?Err("#DIV/0!"):0;
+  return N==="MIN"?Math.min(...ns):N==="MAX"?Math.max(...ns):ns.reduce((a,b)=>a+b,0)/ns.length}
+ if(N==="ROUND"||N==="ROUNDUP"||N==="ROUNDDOWN"){if(A.length<2)return Err("#N/A");const x=num(one(0)),d=num(one(1));if(isE(x))return x;if(isE(d))return d;const f=10**Math.trunc(d),ax=Math.abs(x)*f;
+  const r=N==="ROUND"?Math.round(+ax.toFixed(6)):N==="ROUNDUP"?Math.ceil(+ax.toFixed(6)):Math.floor(+ax.toFixed(6));return Math.sign(x)*r/f}
+ if(N==="ABS"){const x=num(one(0));return isE(x)?x:Math.abs(x)}
+ if(N==="CONCAT"||N==="CONCATENATE"){const xs=[];A.forEach(a=>vals(a,ctx,xs));let s="";for(const x of xs){if(isE(x.v))return x.v;s+=str(x.v)}return s}
+ if(N==="VLOOKUP"){if(A.length<3)return Err("#N/A");const look=one(0);if(isE(look))return look;const rg=ev(A[1],ctx);if(isE(rg))return rg;if(!rg||!rg.rg)return Err("#N/A");
+  const k=num(one(2));if(isE(k))return k;const ix=Math.trunc(k);if(ix<1)return Err("#VALUE!");if(ix>rg.c2-rg.c1+1)return Err("#REF!");
+  let ap=true;if(A[3]&&A[3].k!=="empty"){const a=truthy(one(3));if(isE(a))return a;ap=a}
+  let hit=0;for(let r=rg.r1;r<=rg.r2;r++){const v=cv(rg.sh,r,rg.c1);if(!ap){if(eq(v,look)){hit=r;break}}else{if(v===null||typeof v!==typeof look)continue;if(typeof v==="number"?v<=look:String(v).toLowerCase()<=String(look).toLowerCase())hit=r;else break}}
+  if(!hit)return Err("#N/A");const o=cv(rg.sh,hit,rg.c1+ix-1);return o===null?0:o}
+ return Err("#NAME?")}
+function cv(sh,r,c){const key=sh.name+"!"+r+","+c;if(MEMO.has(key))return MEMO.get(key);const raw=sh.cells[L(c)+r];let v;
+ if(raw===undefined||raw===null||raw==="")v=null;
+ else if(typeof raw==="string"&&raw[0]==="="){if(STACK.has(key))return Err("#REF!");STACK.add(key);try{v=sc(ev(parse(raw.slice(1)),sh));if(v===null)v=0}catch(e){v=Err("#NAME?")}STACK.delete(key)}
+ else v=raw;MEMO.set(key,v);return v}
+
+/* ---------- case data ---------- */
+const NM=["Andi Saputra","Bella Rahma","Cahyo Nugroho","Dewi Anggraini","Eko Prasetyo","Fajar Hidayat","Gita Permata","Hadi Kurniawan","Indah Sari","Joko Susilo","Kurnia Putri","Lina Marlina","Mahesa Adi","Nanda Pertiwi","Oki Firmansyah","Putu Wirawan"];
+const PS=["Jakarta","Bogor","Bandung","Surabaya","Medan","Makassar","Palembang","Semarang"];
+const BS=[3499879,3802862,4148179,4737678,5288796,5399406,5729876];
+const MT=["PT INCONIS NUSA JAYA","PT SMARTELCO SOLUSI TEKNOLOGI","PT SOLUSI KONVERGEN INDONESIA","TA"];
+const KETS=["RAPEL ABSEN","RAPEL NAKER BARU","RAPEL PENYESUAIAN PSA","HOLD GAJI & SARKER - JAWA BALI","HOLD GAJI PAMASUKA","PENYESUAIAN HK (5 HK) - JAWA BALI","PENYESUAIAN HK (0 HK) - JAWA BALI","GAJI TIDAK DIBAYARKAN PAMASUKA","PEMBAYARAN HOLD GAJI OKTOBER","BA RESIGN SUMATERA"];
+const C=[
+{judul:"BA Rapel Absen",area:"Area Jabotabek Jabar",no:"BA/HCM-JBR/112/XI/2026",tgl:"13 November 2026",isi:"Ybs mengajukan cuti tanggal 1–2 Oktober 2026, namun atasan terlambat meng-approve tiket sehingga absen kosong dan gaji Oktober terpotong 2 HK. Mohon dibayarkan rapel 2 HK.",
+ kv:[["NIK","99260011"],["Nama","Rina Kartika"],["PSA","Jakarta"],["Tgl absen kosong","01–02 Oktober 2026"],["HK rapel","2 HK"]],lamp:"Lampiran: Form Service 05, screenshot tiket cuti.",
+ t:{nik:99260011,nama:"Rina Kartika",psa:"Jakarta",mitra:"PT INCONIS NUSA JAYA",hk:20,base:5200000,ij:800000},sheets:["Master","awal","ok","Approval","HRMISTA"],key:"Approval",
+ appr:[[99260011,"Rina Kartika","Cuti","01–02 Okt 2026","30-09-2026","20-10-2026"]],ans:"proses",kind:"rep",cek:"BA RAPEL ABSEN",ket:"RAPEL ABSEN",tasks:["D","E","J","K","M","U","V"],
+ aturan:"HK Oktober di sheet awal memang 20, dan tiket cuti 1–2 Okt baru di-approve 20 Okt (lewat cut-off). Pola 1: PROSES = yang sudah dibayar, SEHARUSNYA = 22 HK, RAPEL = T − K."},
+{judul:"BA Rapel Absen",area:"Area Sumatera",no:"BA/HCM-SMT/087/XI/2026",tgl:"12 November 2026",isi:"Mohon dibantu pembayaran rapel absen bulan Oktober 2026 untuk karyawan berikut karena absennya bermasalah.",
+ kv:[["NIK","99250042"],["Nama","Hendra Wijaya"],["PSA","Medan"],["Tgl absen kosong","–"],["HK rapel","–"]],lamp:"Lampiran: tidak ada.",
+ t:{nik:99250042,nama:"Hendra Wijaya",psa:"Medan",hk:19,base:4300000,ik:150000},sheets:["awal","ok","Approval","HRMISTA"],key:"Approval",appr:[],ans:"lengkapi",
+ aturan:"BA tidak menyebut tanggal, jumlah HK, maupun alasan, dan sheet Approval tidak punya tiket untuk NIK ini. Minta area membuat BA per naker yang detail dengan Form Service 05."},
+{judul:"BA Rapel Naker Baru",area:"Area Jabotabek Jabar",no:"BA/HCM-JBR/118/XI/2026",tgl:"14 November 2026",isi:"Ybs sudah bekerja sejak 21 Oktober 2026, namun NIK baru terbit 3 November 2026 sehingga gaji Oktober belum dibayarkan. Mohon dibayarkan rapel gaji Oktober.",
+ kv:[["NIK","99260031"],["Nama","Dodi Pratama"],["PSA","Tangerang"],["Tgl mulai kerja","21 Oktober 2026"],["Periode rapel","21–31 Oktober 2026 (8 HK)"]],lamp:"Lampiran: kontrak kerja, screenshot HRMISTA.",
+ t:{nik:99260031,nama:"Dodi Pratama",psa:"Tangerang",mitra:"PT SMARTELCO SOLUSI TEKNOLOGI",base:4500000,hkRapel:8,mulai:"2026-10-21",kontrak:"2026-10-21",dibuat:"2026-11-03",inRep:false},sheets:["Master","awal","ok","absen ok","HRMISTA"],key:"HRMISTA",
+ ans:"proses",kind:"rep",cek:"CEK TGL AWAL KONTRAK",ket:"RAPEL NAKER BARU",over:{E:0,F:0,G:0,H:0,I:0,M:"=VLOOKUP(A{r},'absen ok'!A:C,3,FALSE)",N:"=VLOOKUP(A{r},Master!A:F,4,FALSE)",O:0,P:0,Q:0,R:0},
+ tasks:["D","M","N","U","V"],refD:"=IFERROR(VLOOKUP(A{r},awal!B:E,4,FALSE),0)",
+ aturan:"Tgl awal kontrak (21 Okt) lebih awal dari tgl NIK dibuat (3 Nov), jadi boleh dirapel. NIK belum ada di Report Oktober (#N/A) → HK proses 0. SEHARUSNYA: HK 8 dari absen ok, base dari Master."},
+{judul:"BA Rapel Naker Baru",area:"Area Jabotabek Jabar",no:"BA/HCM-JBR/119/XI/2026",tgl:"14 November 2026",isi:"Ybs mulai bekerja tanggal 10 November 2026. Mohon dibayarkan rapel gaji bulan Oktober 2026 karena data belum masuk payroll.",
+ kv:[["NIK","99260044"],["Nama","Sinta Lestari"],["PSA","Tangerang"],["Tgl mulai kerja","10 November 2026"],["Periode rapel","Oktober 2026"]],lamp:"Lampiran: screenshot HRMISTA.",
+ t:{nik:99260044,nama:"Sinta Lestari",psa:"Tangerang",mulai:"2026-11-10",kontrak:"2026-11-10",akhir:"2026-11-30",dibuat:"2026-11-10",inRep:false},sheets:["awal","HRMISTA"],key:"HRMISTA",ans:"tidak",
+ aturan:"Tgl awal kontrak sama dengan tgl NIK dibuat (10 Nov), jadi tidak ada gaji Oktober yang perlu dirapel. Barisnya dihapus dan PDF diberi nama (TIDAK PROSES KARENA ...)."},
+{judul:"BA Rapel Perubahan PSA",area:"Area Jabotabek Jabar",no:"BA/HCM-JBR/121/XI/2026",tgl:"15 November 2026",isi:"Ybs mendapat penetapan mutasi per 7 Agustus 2026 dari Bogor ke Jakarta, namun payroll Agustus s.d. Oktober masih dibayar dengan PSA Bogor. Mohon dibayarkan selisih upah 3 bulan.",
+ kv:[["NIK","99240077"],["Nama","Agus Salim"],["PSA dibayar","Bogor"],["PSA seharusnya","Jakarta (sejak 07-08-2026)"],["Payroll terdampak","Agustus–Oktober 2026"]],lamp:"Lampiran: SK mutasi.",
+ t:{nik:99240077,nama:"Agus Salim",psa:"Bogor",mitra:"PT SOLUSI KONVERGEN INDONESIA",hk:22,base:5399406,newPsa:"Jakarta",gadas:5729876,efektif:"07-08-2026"},sheets:["Master","awal","ok","Perubahan","HRMISTA"],key:"Perubahan",
+ ans:"proses",kind:"rep",cek:"RAPEL PERUBAHAN PSA",ket:"RAPEL PENYESUAIAN PSA",over:{L:"=VLOOKUP(A{r},Perubahan!A:I,3,FALSE)",N:"=VLOOKUP(A{r},Perubahan!A:I,4,FALSE)",U:"=(T{r}-K{r})*3"},tasks:["E","N","U","V"],
+ aturan:"PSA salah 3 payroll (Agt–Okt) dengan HK penuh, jadi RAPEL = (T − K) × 3, seperti =(T6-K6)*3 di Rekap November. Gadas PSA yang benar dari sheet Perubahan."},
+{judul:"BA Hold Gaji",area:"Area Jawa Bali",no:"BA/HCM-JB/064/XI/2026",tgl:"16 November 2026",isi:"Ybs resign per 26 Oktober 2026, namun NIK masih aktif dan alker (ONT 2 unit) belum dikembalikan. Mohon gaji November ditahan sampai alker dikembalikan.",
+ kv:[["NIK","99250105"],["Nama","Bayu Saputra"],["Tgl resign","26 Oktober 2026"],["Alker","ONT 2 unit, belum kembali"],["Pengajuan","HOLD GAJI & SARKER"]],lamp:"Lampiran: surat resign.",
+ t:{nik:99250105,nama:"Bayu Saputra",psa:"Surabaya",mitra:"PT SMARTELCO SOLUSI TEKNOLOGI",base:3500000,ik:120000,hkNow:22},sheets:["Master","absen ok","Perubahan","HRMISTA"],key:"absen ok",
+ ans:"proses",kind:"now",cek:"BA HOLD GAJI",ket:"HOLD GAJI & SARKER - JAWA BALI",over:{M:0},tasks:["D","G","M","U","V"],
+ aturan:"Hold gaji bulan berjalan = pola 2. PROSES = yang akan dibayar sistem bulan ini (HK dari absen ok, komponen dari Perubahan). SEHARUSNYA = komponen sama, HK 0. RAPEL minus."},
+{judul:"BA Penyesuaian HK",area:"Area Jawa Bali",no:"BA/HCM-JB/066/XI/2026",tgl:"16 November 2026",isi:"Ybs resign efektif 6 November 2026 (hari kerja terakhir). Mohon gaji November disesuaikan sesuai hari kerja.",
+ kv:[["NIK","99230018"],["Nama","Lukman Hakim"],["Tgl resign","06 November 2026"],["Alker","Sudah dikembalikan"],["Pengajuan","PENYESUAIAN HK"]],lamp:"Lampiran: surat resign, serah terima alker.",
+ t:{nik:99230018,nama:"Lukman Hakim",psa:"Surabaya",mitra:"PT INCONIS NUSA JAYA",base:5288796,hkNow:22},sheets:["Master","absen ok","Perubahan","Kalender"],key:"Kalender",
+ ans:"proses",kind:"now",cek:"BA PENYESUAIAN HK",ket:"PENYESUAIAN HK (5 HK) - JAWA BALI",over:{M:5},tasks:["E","M","U","V"],
+ aturan:"Pola 2. Sistem membayar 22 HK, seharusnya hanya 2–6 Nov = 5 HK (lihat Kalender). RAPEL = ROUND(5/22×THP) − ROUND(22/22×THP), hasilnya minus."},
+{judul:"Surat Pernyataan Absen Kosong",area:"Area Jawa Tengah",no:"Form Service 03",tgl:"13 November 2026",isi:"Yang bertanda tangan menyatakan benar ada absen kosong pada tanggal 2, 3 dan 4 November 2026 dengan alasan peralihan NIK. Mohon diproses rapel absennya.",
+ kv:[["NIK","99260106"],["Nama","Dimas Aryo"],["Jabatan","Teknisi Maintenance"],["Tgl absen kosong","2, 3, 4 November 2026"],["Alasan","Peralihan NIK"]],lamp:"Ditandatangani Mgr HC Operation & Service dan Mgr Business Support.",
+ t:{nik:99260106,nama:"Dimas Aryo",psa:"Magelang",mulai:"2026-11-13",kontrak:"2026-11-13",dibuat:"2026-11-13",hkNow:13},sheets:["HRMISTA","absen ok"],key:"HRMISTA",ans:"tidak",
+ aturan:"Kontrak di HRMISTA baru mulai 13 November; pada 2–4 November ybs belum terdaftar dengan NIK ini. TIDAK PROSES, PDF diberi nama (TIDAK PROSES KARENA KONTRAK HRMISTA ...)."},
+{judul:"BA Pembayaran Hold Gaji",area:"Area Pamasuka",no:"BA/HCM-PMS/041/XI/2026",tgl:"17 November 2026",isi:"Gaji Oktober ybs sebelumnya ditahan karena alker belum dikembalikan. Alker sudah diserahkan ke warehouse 12 November 2026. Mohon gaji Oktober yang ditahan dibayarkan pada payroll November.",
+ kv:[["NIK","99220090"],["Nama","Yusuf Rahman"],["Gaji ditahan","Payroll Oktober 2026"],["Alker","Sudah kembali 12-11-2026"],["Pengajuan","Pembayaran hold"]],lamp:"Lampiran: serah terima alker, BA hold Oktober.",
+ t:{nik:99220090,nama:"Yusuf Rahman",psa:"Makassar",mitra:"TA",hold:-6757075},sheets:["Master","Rekap Okt","HRMISTA"],key:"Rekap Okt",
+ ans:"proses",kind:"none",cek:"BA PEMBAYARAN HOLD",ket:"PEMBAYARAN HOLD GAJI OKTOBER",over:{U:"=-VLOOKUP(A{r},'Rekap Okt'!A:D,4,FALSE)"},tasks:["U","V"],
+ aturan:"Pola 3: nilainya sudah pasti dari Rekap Oktober (−6.757.075). Blok PROSES dan SEHARUSNYA dikosongkan; RAPEL = kebalikan nilai hold bulan lalu, alasan lengkap di KET."}
+];
+const DESC={rep:{D:"HK yang dibayar Oktober · sheet awal (kolom HK)",E:"Base Salary yang dibayar · sheet ok, kolom ke-6 dihitung dari B",J:"THP = jumlah E sampai I",K:"TOTAL dibayar = ROUND(HK/22 × THP, 0)",M:"HK seharusnya",N:"Base Salary seharusnya",U:"RAPEL = TOTAL seharusnya − TOTAL proses",V:"KET sesuai format Rekap (pilih dari daftar)"},
+ now:{D:"HK yang akan dibayar bulan ini · sheet absen ok kolom 2",E:"Base Salary bulan ini · sheet Perubahan kolom Gadas",G:"Insentif Khusus bulan ini · sheet Perubahan kolom Khusus",M:"HK seharusnya",U:"RAPEL = T − K (minus = potongan)",V:"KET sesuai format Rekap"},
+ none:{U:"RAPEL langsung · kebalikan nilai hold di sheet Rekap Okt",V:"KET sesuai format Rekap"}};
+const DX=[{},{},{D:"HK dibayar Oktober · cek sheet awal; NIK tidak ada (#N/A) artinya belum dibayar → 0. Coba IFERROR(VLOOKUP(...),0)",M:"HK rapel · sheet absen ok kolom HK Rapel",N:"Base seharusnya · sheet Master kolom Base Salary"},{},{E:"Base Salary yang dibayar dengan PSA lama · sheet ok",N:"Gadas PSA yang benar · sheet Perubahan kolom ke-4",U:"RAPEL 3 bulan = (T − K) × 3"},{M:"HK seharusnya untuk gaji yang ditahan"},{M:"HK seharusnya s.d. tanggal resign · lihat sheet Kalender"},{},{}];
+function rowSpec(ci){const c=C[ci];const pre={A:c.t.nik,B:"=VLOOKUP(A{r},Master!A:F,2,FALSE)",C:c.cek,W:"=VLOOKUP(A{r},Master!A:F,6,FALSE)",V:c.ket};
+ if(c.kind!=="none"){Object.assign(pre,{L:"=VLOOKUP(A{r},Master!A:F,3,FALSE)",J:"=SUM(E{r}:I{r})",K:"=ROUND(D{r}/22*J{r},0)",N:"=E{r}",O:"=F{r}",P:"=G{r}",Q:"=H{r}",R:"=I{r}",S:"=SUM(N{r}:R{r})",T:"=ROUND(M{r}/22*S{r},0)",U:"=T{r}-K{r}"});
+  if(c.kind==="rep"){pre.D="=VLOOKUP(A{r},awal!B:E,4,FALSE)";"EFGHI".split("").forEach((x,i)=>pre[x]=`=VLOOKUP(A{r},ok!B:L,${6+i},FALSE)`);pre.M=22}
+  else{pre.D="=VLOOKUP(A{r},'absen ok'!A:C,2,FALSE)";"EFGHI".split("").forEach((x,i)=>pre[x]=`=VLOOKUP(A{r},Perubahan!A:I,${4+i},FALSE)`)}}
+ Object.assign(pre,c.over||{});if(c.refD)pre.D=c.refD;
+ const tasks=c.tasks.map(col=>({c:col,ref:pre[col],fn:typeof pre[col]==="string"&&/VLOOKUP|SUM\(|ROUND/.test(pre[col])?(pre[col].match(/VLOOKUP|SUM|ROUND/)[0]):null,d:(DX[ci]&&DX[ci][col])||DESC[c.kind][col]||""}));
+ const p2={};for(const k in pre)if(!c.tasks.includes(k))p2[k]=pre[k];return {pre:p2,tasks}}
+function people(ci){const out=[];for(let k=0;k<7;k++){const s=(ci*5+k*3)%16;out.push({nik:99180000+ci*1000+k*37+11,nama:NM[s],psa:PS[(ci+k)%8],base:BS[(ci*3+k)%7],hk:[22,22,21,22,20,22,19][(ci+k)%7],mitra:MT[(ci+k)%4],ij:k%3===0?600000:0,ik:k%4===1?150000:0,f:1})}
+ out.splice(3,0,Object.assign({ij:0,ik:0,imk:0,ike:0},C[ci].t));return out}
+function mk(name,head,rows,note){const sh={name,cells:{},nc:head.length,w:[0],fmt:[0],hdr:1,note};head.forEach((h,i)=>{sh.cells[L(i+1)+1]=h;sh.fmt[i+1]=/salary|gadas|thp|insentif|masa kerja|khusus|jabatan|keahlian|rapel/i.test(h)?"acc":"gen";sh.w[i+1]=Math.max(54,h.length*7.5+16)});
+ rows.forEach((row,ri)=>row.forEach((v,ci)=>{if(v!==null&&v!==undefined&&v!=="")sh.cells[L(ci+1)+(ri+2)]=v;const len=(typeof v==="number"&&sh.fmt[ci+1]==="acc"?nf(v).length+2:String(v??"").length)*7.6+14;if(len>sh.w[ci+1])sh.w[ci+1]=Math.min(260,len)}));sh.nr=rows.length+1;return sh}
+function dataSheets(ci){const c=C[ci],P=people(ci),t=P[3],inRep=c.t.inRep!==false;const R=P.filter(p=>p.f||inRep);const out=[];
+ for(const s of c.sheets){
+  if(s==="Master")out.push(mk("Master",["NIK","NAMA","PSA","Base Salary","Tgl Awal Kontrak","NAMA MITRA"],P.filter(p=>p.f||c.t.mitra).map(p=>[p.nik,p.nama,p.psa,p.base,p.kontrak||"2026-01-01",p.mitra||"TA"]),"Master Payroll Non Telkom nOVEMBER 2026.xlsx · Worksheet"));
+  if(s==="awal")out.push(mk("awal",["NO","NIK","Nama","PSA","HK"],R.map((p,i)=>[i+1,p.nik,p.nama,p.psa,p.hk??22]),"Report Payroll Non Telkom Oktober 2026.xlsx · sheet awal (di file asli HK ada di kolom ke-51)"));
+  if(s==="ok")out.push(mk("ok",["NO","NIK","Nama","PSA","No Rekening","Bank","Base Salary","Insentif Masa Kerja","Insentif Khusus","Insentif Jabatan","Insentif Keahlian","THP"],R.map((p,i)=>[i+1,p.nik,p.nama,p.psa,"0"+(1300000000+p.nik%9999991*7),["BRI","BNI","MANDIRI","BSI"][i%4],p.base,p.imk||0,p.ik||0,p.ij||0,p.ike||0,p.base+(p.imk||0)+(p.ik||0)+(p.ij||0)+(p.ike||0)]),"Report Payroll Non Telkom Oktober 2026.xlsx · sheet ok"));
+  if(s==="absen ok")out.push(mk("absen ok",["NIK","HK bulan berjalan","HK Rapel"],P.map(p=>[p.nik,p.hkNow??22,p.hkRapel??0]),"Sheet absen ok di file Rekap · HK November 2026"));
+  if(s==="Perubahan")out.push(mk("Perubahan",["NIK","Nama","PSA","Gadas","Masa Kerja","Khusus","Jabatan","Keahlian","Efektif"],P.map(p=>[p.nik,p.nama,p.newPsa||p.psa,p.gadas||p.base,p.imk||0,p.ik||0,p.ij||0,p.ike||0,p.efektif||"01-11-2026"]),"Data_Report_Perubahan 19112026.xlsx · Sheet1 (di file asli gadas ada di kolom 19)"));
+  if(s==="HRMISTA")out.push(mk("HRMISTA",["NIK","NAMA","ID PSA","STATUS NAKER","TGL MULAI KERJA","TGL AWAL KONTRAK","TGL AKHIR KONTRAK","TGL NIK DIBUAT"],P.map(p=>[p.nik,p.nama,p.psa,"ACTIVE",p.mulai||"2024-03-01",p.kontrak||"2026-01-01",p.akhir||"2026-12-31",p.dibuat||"2024-02-26"]),"Export HRMISTA · Employee Management › Detail"));
+  if(s==="Approval")out.push(mk("Approval",["NIK","Nama","Keterangan","Tanggal","Diajukan","Di-approve"],[...P.filter(p=>p.f).slice(0,4).map(p=>[p.nik,p.nama,"Sakit","05-10-2026","05-10-2026","06-10-2026"]),...c.appr],"Portal › Present Online › Approval Absen · filter 2026-09-16 s.d. 2026-10-15 (cut-off 15 Okt)"));
+  if(s==="Kalender")out.push(mk("Kalender",["Sen","Sel","Rab","Kam","Jum","Sab","Min"],[["","","","","","",1],[2,3,4,5,6,7,8],[9,10,11,12,13,14,15],[16,17,18,19,20,21,22],[23,24,25,26,27,28,29],[30,"","","","","",""]],"Kalender November 2026 · 1 Nov hari Minggu; resign efektif 6 Nov (Jumat)"));
+  if(s==="Rekap Okt")out.push(mk("Rekap Okt",["NIK","NAMA","KET","RAPEL"],P.map(p=>[p.nik,p.nama,p.hold?"HOLD GAJI PAMASUKA":"RAPEL ABSEN",p.hold||Math.round(p.base/22)]),"Rekap Rapel Oktober 2026.xlsx · sheet rapel ok (arsip)"))}
+ return out}
+const RH=["NIK","NAMA","CEK","HK","Base Salary","Insentif Masa Kerja","Insentif Khusus","Insentif Jabatan","Insentif Keahlian","THP","TOTAL","PSA","HK","Base Salary","Insentif Masa Kerja","Insentif Khusus","Insentif Jabatan","Insentif Keahlian","THP","TOTAL","RAPEL","KET","NAMA MITRA"];
+const RW=[0,80,150,160,40,92,92,92,92,92,92,92,84,40,92,92,92,92,92,92,92,100,250,230];
+
+/* ---------- state ---------- */
+const fresh=()=>({i:0,pts:0,res:[],seen:[],hint:false,stage:"decide",dec:0,frozen:[],inputs:{},th:[],view:REK,sel:{r:3,c:1,r2:3,c2:1}});
+let S=fresh(),ED=null,INS=null,DRAG=null,PT=null,MSG="";
+const curRow=()=>3+S.frozen.length;
+function rekap(inputs){const sh={name:REK,cells:{C1:"PROSES",L1:"SEHARUSNYA"},nc:23,w:RW,fmt:[0],hdr:2,note:"File kerja Rekap Rapel November 2026 · sel kuning = tugasmu"};
+ RH.forEach((h,i)=>{sh.cells[L(i+1)+2]=h;sh.fmt[i+1]=[4,13].includes(i+1)?"gen":(i+1>=5&&i+1<=21&&i+1!==12)?"acc":"gen"});
+ S.frozen.forEach((f,k)=>{for(const c in f)sh.cells[c+(3+k)]=f[c]});
+ const r=curRow();if(S.stage==="form"){const rs=rowSpec(S.i);for(const k in rs.pre){const v=rs.pre[k];sh.cells[k+r]=typeof v==="string"?v.replaceAll("{r}",r):v}for(const tk of rs.tasks){const v=inputs[tk.c];if(v!==undefined&&v!=="")sh.cells[tk.c+r]=v}}
+ sh.nr=Math.max(r+1,3);return sh}
+function build(inputs){BOOK=new Map();const list=[rekap(inputs||S.inputs),...(S.i<C.length?dataSheets(S.i):[])];list.forEach(s=>BOOK.set(s.name.toLowerCase(),s));MEMO=new Map();STACK=new Set();return list}
+function rowVals(inputs){build(inputs);const sh=BOOK.get(REK),r=curRow(),o={};for(let c=1;c<=23;c++){const v=cv(sh,r,c);if(v!==null)o[L(c)]=v}build();return o}
+const isTask=(r,c)=>S.stage==="form"&&S.view===REK&&r===curRow()&&rowSpec(S.i).tasks.some(t=>t.c===L(c));
+
+/* ---------- render ---------- */
+const rankOf=p=>p>=90?"Master BA":p>=75?"Senior Payroll":p>=50?"Junior Payroll":"Trainee";
+function hud(){const mx=S.res.reduce((a,r)=>a+r.max,0),pct=mx?S.pts/mx*100:0;$("pts").textContent=S.pts;$("rank").textContent="poin · "+rankOf(pct);$("sub").textContent=S.i<C.length?`Kasus ${S.i+1} dari ${C.length} · Payroll November 2026`:"Shift selesai";
+ $("pips").innerHTML=C.map((c,k)=>`<span class="pip ${k<S.res.length?(S.res[k].got>=S.res[k].max*.75?"g":"m"):k===S.i?"cur":""}"></span>`).join("")}
+function paper(mark){const c=C[S.i];if(!c)return;$("pdfn").textContent=`BA_${c.kv[0][1]}_${c.kv[1][1].toUpperCase()}.pdf`;
+ $("paper").innerHTML=`<div class="kop"><b>TelkomAkses</b><span>${esc(c.area)}<br>No. ${esc(c.no)}</span></div><h2>${esc(c.judul.toUpperCase())}</h2><p>Pada tanggal ${esc(c.tgl)} telah dilakukan pengecekan dengan data berikut:</p><table>${c.kv.map(([a,b])=>`<tr><td>${esc(a)}</td><td>${esc(b)}</td></tr>`).join("")}</table><p>${esc(c.isi)}</p><p>Demikian berita acara ini dibuat untuk dapat diproses sebagaimana mestinya.</p><div class="ttd"><span>Yang Membuat,<i>Staff HCM</i>HCM ${esc(c.area.replace("Area ",""))}</span><span>Yang Menyetujui,<i>Mgr SSR</i>Mgr Shared Service Regional</span></div><div class="lamp">${esc(c.lamp)}</div>${mark||""}`}
+function disp(v,f){if(v===null)return "";if(isE(v))return v.err;if(typeof v==="boolean")return v?"TRUE":"FALSE";if(typeof v==="number"){if(f==="acc")return v===0?"-":v<0?`(${nf(v)})`:nf(v);return Number.isInteger(v)?String(v):String(+v.toFixed(6))}return String(v)}
+function grid(){const list=build();let sh=BOOK.get(S.view.toLowerCase());if(!sh){S.view=REK;sh=BOOK.get(REK)}
+ const nr=Math.max(sh.nr+4,sh.name===REK?14:10),nc=sh.nc+2,s=S.sel,rmin=Math.min(s.r,s.r2),rmax=Math.max(s.r,s.r2),cmin=Math.min(s.c,s.c2),cmax=Math.max(s.c,s.c2);const cr=curRow();
+ let h=`<table class="g"><colgroup><col style="width:38px">`;for(let c=1;c<=nc;c++)h+=`<col style="width:${Math.round(sh.w[c]||70)}px">`;h+=`</colgroup><thead><tr><th class="cx"></th>`;
+ for(let c=1;c<=nc;c++)h+=`<th data-h="${c}" class="${c>=cmin&&c<=cmax?"on":""}">${L(c)}</th>`;h+=`</tr></thead><tbody>`;
+ for(let r=1;r<=nr;r++){h+=`<tr><th data-rh="${r}" class="${r>=rmin&&r<=rmax?"on":""}">${r}</th>`;for(let c=1;c<=nc;c++){const v=c<=sh.nc?cv(sh,r,c):null;const cl=[];
+   if(typeof v==="number")cl.push("n");if(isE(v))cl.push("e");
+   if(sh.name===REK){if(r===1&&c>=3&&c<=11)cl.push("bp");else if(r===1&&c>=12&&c<=20)cl.push("bs");else if(r===2)cl.push(c<=2||c>=22?"hdA":c<=11?"hdP":c<=20?"hdS":"hdU");else if(S.stage==="form"&&r===cr)cl.push(isTask(r,c)?"tk":"cur")}
+   else if(r===1&&c<=sh.nc)cl.push("h1");
+   if(r>=rmin&&r<=rmax&&c>=cmin&&c<=cmax&&(rmin!==rmax||cmin!==cmax))cl.push("rg");if(r===s.r&&c===s.c)cl.push("act");
+   if(PT&&PT.sheet===sh.name&&r>=PT.r1&&r<=PT.r2&&c>=PT.c1&&c<=PT.c2)cl.push("pt");
+   h+=`<td data-r="${r}" data-c="${c}" class="${cl.join(" ")}">${esc(c<=sh.nc?disp(v,sh.fmt[c]):"")}</td>`}h+=`</tr>`}
+ $("gw").innerHTML=h+`</tbody></table>`;$("snote").textContent=sh.note||"";
+ $("tabs").innerHTML=list.map(x=>`<button class="stab ${x.name===sh.name?"on":""} ${x.name!==REK&&S.seen.includes(x.name)?"seen":""}" data-s="${esc(x.name)}">${esc(x.name)}</button>`).join("");
+ $("nb").value=(rmin!==rmax||cmin!==cmax)&&!ED?`${rmax-rmin+1}R x ${cmax-cmin+1}C`:L(s.c)+s.r;
+ if(!ED){const raw=sh.cells[L(s.c)+s.r];$("fx").value=raw===undefined?"":isE(raw)?raw.err:String(raw);$("fx").readOnly=!isTask(s.r,s.c)}
+ let agg="";if(!ED&&(rmin!==rmax||cmin!==cmax)){let sum=0,n=0,cnt=0;for(let r=rmin;r<=rmax;r++)for(let c=cmin;c<=cmax;c++){const v=c<=sh.nc?cv(sh,r,c):null;if(v!==null)cnt++;if(typeof v==="number"){sum+=v;n++}}agg=`Jumlah: ${cnt}`+(n?` · Rata-rata: ${disp(sum/n,"acc")} · Total: ${disp(sum,"acc")}`:"")}
+ $("agg").textContent=agg;$("mode").innerHTML=MSG?`<span class="warn">${esc(MSG)}</span>`:ED?(PT?"Tunjuk":"Masukkan"):"Siap";
+ const vt=isTask(s.r,s.c)&&L(s.c)==="V";$("kets").classList.toggle("on",vt);if(vt)$("kets").innerHTML=`<span>Daftar KET:</span>`+KETS.map(k=>`<button data-k="${esc(k)}">${esc(k)}</button>`).join("")}
+function tasks(){const st=S.stage==="form";$("send").disabled=!st;
+ if(!st){$("tq").textContent=S.stage==="end"?"Shift selesai. Lihat sheet rapel ok untuk semua baris yang kamu proses.":S.stage==="decide"?"Cap BA dulu. Kalau PROSES, baris baru muncul di sheet rapel ok dengan sel kuning untuk diisi.":"";$("tl").innerHTML="";return}
+ const r=curRow(),rs=rowSpec(S.i);$("tq").textContent=S.i===0?"Klik sel kuning, ketik rumus di bilah fx, tekan Enter. Saat mengetik rumus, klik tab sheet lain lalu klik sel atau huruf kolom untuk menyisipkan referensi, persis seperti Excel.":"Isi sel kuning di baris "+r+". Sel lain sudah berisi rumus; klik untuk melihatnya.";
+ $("tl").innerHTML=rs.tasks.map(t=>{const raw=S.inputs[t.c];const hint=S.th.includes(t.c);return `<li><button class="ad" data-go="${t.c}">${t.c}${r}</button><div>${esc(t.d)}${hint?`<br><code>${esc(String(t.ref).replaceAll("{r}",r))}</code>`:""}<span class="st ${raw?"f":""}">${raw?"terisi: "+esc(raw):"kosong"}</span></div>${hint?"":`<button class="gh" data-th="${t.c}">Rumus (−3)</button>`}</li>`}).join("")}
+function tip(){const fx=$("fx");if(!ED||!fx.value.startsWith("=")){$("tip").classList.remove("on");return}
+ const s=fx.value.slice(0,fx.selectionStart);const st=[];let q=false,w="";for(const ch of s){if(ch==='"'){q=!q;continue}if(q)continue;if(/[A-Za-z]/.test(ch)){w+=ch;continue}if(ch==="("){st.push({n:w.toUpperCase(),a:0});w="";continue}w="";if(ch===")")st.pop();else if((ch===","||ch===";")&&st.length)st[st.length-1].a++}
+ const top=[...st].reverse().find(x=>SIG[x.n]);if(!top){$("tip").classList.remove("on");return}const sg=SIG[top.n];const a=Math.min(top.a,sg[0].length-1);
+ $("tip").innerHTML=`${top.n}(${sg[0].map((p,i)=>i===a?`<b>${p}</b>`:p).join("; ")}) · ${esc(sg[1][a]||"")}`;$("tip").classList.add("on")}
+const SIG={VLOOKUP:[["lookup_value","table_array","col_index_num","[range_lookup]"],["nilai yang dicari, biasanya NIK di kolom A baris ini","tabel sumber; kolom pertamanya harus kolom NIK (mis. ok!B:L)","kolom ke berapa yang diambil, dihitung dari kolom pertama tabel","FALSE = harus sama persis. Selalu isi FALSE"]],SUM:[["number1","[number2]","…"],["rentang yang dijumlah, mis. E5:I5","",""]],ROUND:[["number","num_digits"],["angka yang dibulatkan, mis. D5/22*J5","0 = tanpa desimal"]],IFERROR:[["value","value_if_error"],["rumus yang mungkin error, mis. VLOOKUP(...)","nilai pengganti kalau error, mis. 0"]],IF:[["logical_test","value_if_true","value_if_false"],["kondisi","hasil kalau benar","hasil kalau salah"]],CONCAT:[["text1","[text2]"],["teks pertama","teks berikutnya"]]};
+function render(){hud();grid();tasks();tip()}
+
+/* ---------- editing ---------- */
+function shNow(){return BOOK.get(S.view.toLowerCase())||BOOK.get(REK)}
+function begin(init){const s=S.sel;if(!isTask(s.r,s.c)){MSG=S.stage==="form"?"Sel ini terkunci. Isi sel kuning saja.":"Cap BA dulu sebelum mengisi Rekap.";grid();setTimeout(()=>{MSG="";grid()},2200);return}
+ ED={r:s.r,c:s.c};INS=null;const fx=$("fx");fx.readOnly=false;fx.value=init!==undefined?init:(S.inputs[L(s.c)]||"");fx.focus();fx.setSelectionRange(fx.value.length,fx.value.length);grid();tip()}
+function commit(move=true){if(!ED)return;const v=$("fx").value.trim();if(v.startsWith("=")){try{parse(v.slice(1))}catch(e){MSG="Rumus belum lengkap atau salah ketik. Periksa tanda kurung dan pemisah.";grid();return}}
+ const col=L(ED.c);if(v==="")delete S.inputs[col];else S.inputs[col]=/^-?\d+(\.\d+)?$/.test(v)?+v:v;
+ const r=ED.r;ED=null;INS=null;PT=null;MSG="";S.view=REK;$("fx").readOnly=true;
+ if(move){const ts=rowSpec(S.i).tasks.map(t=>t.c),k=ts.indexOf(col),nx=ts[k+1];S.sel={r,c:nx?CN(nx):CN(col),r2:r,c2:nx?CN(nx):CN(col)}}
+ render()}
+function cancel(){ED=null;INS=null;PT=null;MSG="";S.view=REK;$("fx").readOnly=true;render()}
+function canPoint(){const fx=$("fx");if(!fx.value.startsWith("="))return false;if(INS)return true;const b=fx.value.slice(0,fx.selectionStart).trimEnd();return /[=(,;+\-*\/^&<>:]$/.test(b)}
+function refTxt(r1,c1,r2,c2,col){const sh=shNow();let p="";if(sh.name!==REK)p=(/^[A-Za-z_][A-Za-z0-9_]*$/.test(sh.name)?sh.name:`'${sh.name}'`)+"!";
+ const a=Math.min(c1,c2),b=Math.max(c1,c2);if(col)return p+L(a)+":"+L(b);const ra=Math.min(r1,r2),rb=Math.max(r1,r2);return p+(a===b&&ra===rb?L(a)+ra:L(a)+ra+":"+L(b)+rb)}
+function insert(t){const fx=$("fx");if(!INS){const p=fx.selectionStart;INS={s:p,e:p}}fx.value=fx.value.slice(0,INS.s)+t+fx.value.slice(INS.e);INS.e=INS.s+t.length;fx.focus();fx.setSelectionRange(INS.e,INS.e);tip()}
+function pointTo(r1,c1,r2,c2,col){const sh=shNow();PT={sheet:sh.name,r1:col?1:Math.min(r1,r2),r2:col?sh.nr+3:Math.max(r1,r2),c1:Math.min(c1,c2),c2:Math.max(c1,c2)};insert(refTxt(r1,c1,r2,c2,col));grid()}
+const gw=$("gw");
+gw.addEventListener("mousedown",e=>{const td=e.target.closest("td[data-r]"),th=e.target.closest("th[data-h]"),rh=e.target.closest("th[data-rh]");if(!td&&!th&&!rh)return;
+ if(ED&&canPoint()&&(td||th)){e.preventDefault();if(td){const r=+td.dataset.r,c=+td.dataset.c;DRAG={k:"pc",r,c};pointTo(r,c,r,c)}else{const c=+th.dataset.h;DRAG={k:"ph",c};pointTo(0,c,0,c,true)}return}
+ if(ED){commit(false);if(ED)return}
+ if(td){const r=+td.dataset.r,c=+td.dataset.c;S.sel={r,c,r2:r,c2:c};DRAG={k:"s"}}else if(th){const c=+th.dataset.h,sh=shNow();S.sel={r:1,c,r2:sh.nr,c2:c};DRAG={k:"sh",c}}else{const r=+rh.dataset.rh,sh=shNow();S.sel={r,c:1,r2:r,c2:sh.nc}}
+ MSG="";grid()});
+gw.addEventListener("mouseover",e=>{if(!DRAG)return;const td=e.target.closest("td[data-r]"),th=e.target.closest("th[data-h]");
+ if(DRAG.k==="pc"&&td)pointTo(DRAG.r,DRAG.c,+td.dataset.r,+td.dataset.c);else if(DRAG.k==="ph"&&th)pointTo(0,DRAG.c,0,+th.dataset.h,true);
+ else if(DRAG.k==="s"&&td){S.sel.r2=+td.dataset.r;S.sel.c2=+td.dataset.c;grid()}else if(DRAG.k==="sh"&&th){S.sel.c2=+th.dataset.h;grid()}});
+document.addEventListener("mouseup",()=>{DRAG=null});
+gw.addEventListener("dblclick",e=>{if(e.target.closest("td[data-r]")&&!ED)begin()});
+$("tabs").addEventListener("mousedown",e=>{const b=e.target.closest(".stab");if(!b)return;e.preventDefault();S.view=b.dataset.s;if(S.view!==REK&&!S.seen.includes(S.view))S.seen.push(S.view);if(!ED)S.sel={r:1,c:1,r2:1,c2:1};grid();if(ED)$("fx").focus()});
+$("fx").addEventListener("focus",()=>{if(!ED&&isTask(S.sel.r,S.sel.c))begin()});
+$("fx").addEventListener("input",()=>{if(!ED)return;INS=null;PT=null;MSG="";$("mode").textContent="Masukkan";tip()});
+$("fx").addEventListener("keyup",tip);$("fx").addEventListener("click",tip);
+$("fx").addEventListener("keydown",e=>{if(!ED)return;if(e.key==="Enter"){e.preventDefault();commit()}else if(e.key==="Escape"){e.preventDefault();cancel()}else if(e.key==="Tab"){e.preventDefault();commit()}});
+$("fxV").onclick=()=>ED?commit():null;$("fxX").onclick=()=>ED?cancel():null;
+$("fxV").addEventListener("mousedown",e=>e.preventDefault());$("fxX").addEventListener("mousedown",e=>e.preventDefault());
+$("kets").addEventListener("mousedown",e=>{const b=e.target.closest("button[data-k]");if(!b)return;e.preventDefault();if(!ED)begin(b.dataset.k);else $("fx").value=b.dataset.k;commit()});
+document.addEventListener("keydown",e=>{if($("ov").classList.contains("on")){if($("again")&&e.key==="Escape"){$("ov").classList.remove("on");return}if(e.key==="Escape"||e.key==="Enter"){const b=$("nx")||$("again");if(b){e.preventDefault();b.click()}}return}
+ if(ED||e.target.closest("input,select,textarea")||e.metaKey||e.ctrlKey||e.altKey)return;if(e.target.closest("button")&&(e.key==="Enter"||e.key===" "))return;
+ const sh=shNow(),s=S.sel,mv={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1]}[e.key];
+ if(mv){e.preventDefault();const r=Math.max(1,s.r+mv[0]),c=Math.max(1,Math.min(sh.nc+2,s.c+mv[1]));S.sel={r,c,r2:r,c2:c};grid();const td=gw.querySelector(`td[data-r="${r}"][data-c="${c}"]`);td&&td.scrollIntoView({block:"nearest",inline:"nearest"});return}
+ if(e.key==="Enter"||e.key==="F2"){e.preventDefault();begin();return}
+ if((e.key==="Delete"||e.key==="Backspace")&&isTask(s.r,s.c)){e.preventDefault();delete S.inputs[L(s.c)];render();return}
+ if(e.key.length===1&&!e.target.closest("button")){e.preventDefault();begin(e.key)}});
+
+/* ---------- game flow ---------- */
+const LBL={proses:"PROSES",tidak:"TIDAK PROSES",lengkapi:"MINTA KELENGKAPAN"};
+function stamps(on){document.querySelectorAll(".stamp").forEach(b=>b.disabled=!on)}
+function show(h){$("card").innerHTML=h;$("ov").classList.add("on");const b=$("card").querySelector("button");b&&b.focus()}
+function decide(d){if(S.stage!=="decide")return;const c=C[S.i],ok=d===c.ans,tel=S.seen.includes(c.key);S.dec=(ok?40:0)+(ok&&tel?10:0);
+ if(ok&&d==="proses"){S.stage="form";S.inputs={};S.th=[];S.view=REK;const ts=rowSpec(S.i).tasks,r=curRow();S.sel={r,c:CN(ts[0].c),r2:r,c2:CN(ts[0].c)};paper(`<div class="mark" style="color:#107c41">PROSES</div>`);stamps(false);render();
+  const td=gw.querySelector(`td[data-r="${r}"][data-c="${CN(ts[0].c)}"]`);td&&td.scrollIntoView({block:"nearest",inline:"center"});return}
+ paper(`<div class="mark" style="color:${d==="proses"?"#107c41":"#c50f1f"}">${LBL[d]}</div>`);
+ const lines=[[`Keputusan: ${LBL[d]}`+(ok?"":` (seharusnya ${LBL[c.ans]})`),ok?40:0,ok],[`Teliti: membuka sheet ${c.key}`,ok&&tel?10:0,ok&&tel]];if(S.hint)lines.push(["Melihat aturan",-10,false]);
+ finish(ok,lines,c,50)}
+function maxOf(ci){const rs=rowSpec(ci);return 50+rs.tasks.reduce((a,t)=>a+10+(t.fn?5:0),0)}
+function submit(){if(S.stage!=="form")return;if(ED)commit(false);const c=C[S.i],rs=rowSpec(S.i),r=curRow();
+ const ref={};rs.tasks.forEach(t=>ref[t.c]=typeof t.ref==="string"?t.ref.replaceAll("{r}",r):t.ref);const exp=rowVals(ref),got=rowVals(S.inputs);
+ const same=(a,b)=>typeof a==="number"&&typeof b==="number"?Math.abs(a-b)<=1:typeof a==="string"&&typeof b==="string"&&a.trim().toUpperCase()===b.trim().toUpperCase();
+ const lines=[["Keputusan: PROSES",40,true],[`Teliti: membuka sheet ${c.key}`,S.seen.includes(c.key)?10:0,S.seen.includes(c.key)]];let all=true;
+ for(const t of rs.tasks){const g=got[t.c]??null,x=exp[t.c]??null,ok=same(g,x);if(!ok)all=false;const raw=S.inputs[t.c];const fnOk=ok&&t.fn&&typeof raw==="string"&&raw.toUpperCase().includes(t.fn+"(");
+  const f=["D","M","V"].includes(t.c)?"gen":"acc";
+  lines.push([`${t.c}${r}: ${esc(disp(g,f)||"kosong")}`+(ok?"":` → seharusnya ${esc(disp(x,f))}`)+`<br><code>${esc(raw===undefined?"":String(raw))}</code>`+(ok?"":` · contoh: <code>${esc(String(ref[t.c]))}</code>`),ok?10:0,ok,1]);
+  if(t.fn)lines.push([`Pakai ${t.fn} di ${t.c}${r}`,fnOk?5:0,fnOk])}
+ if(S.hint)lines.push(["Melihat aturan",-10,false]);if(S.th.length)lines.push([`Melihat ${S.th.length} contoh rumus`,-3*S.th.length,false]);
+ const fr={};for(const k in got)fr[k]=got[k];S.frozen.push(fr);S.stage="post";finish(all,lines,c,maxOf(S.i))}
+function finish(ok,lines,c,max){const got=Math.max(0,lines.reduce((a,l)=>a+l[1],0));S.pts+=got;S.res.push({got,max});S.stage="done";stamps(false);render();
+ show(`<span class="verdict ${ok?"y":"x"}">${ok?"TEPAT":"MELESET"}</span><h2 style="font-size:26px;margin-bottom:6px">${esc(c.judul)} · ${esc(c.kv[1][1])}</h2><table class="br">${lines.map(([a,b,y,html])=>`<tr><td class="${y?"y":"x"}">${y?"✓":"✗"} ${html?a:esc(a)}</td><td>${b>0?"+":""}${b}</td></tr>`).join("")}<tr><td><b>Total kasus ini</b></td><td>${got} / ${max}</td></tr></table><div class="rule"><b>Kenapa:</b> ${esc(c.aturan)}</div>${c.ans==="proses"&&S.frozen.length&&lines.length>3?`<p style="font-size:13px;color:var(--mut);margin:0 0 10px">Baris sudah di-Paste Values di Rekap, sesuai SOP sebelum file dikirim.</p>`:""}<button class="go" id="nx">${S.i+1<C.length?"Kasus berikutnya":"Lihat hasil shift"}</button>`);
+ $("nx").onclick=next}
+function next(){$("ov").classList.remove("on");S.i++;S.seen=[];S.hint=false;S.stage="decide";S.dec=0;S.inputs={};S.th=[];S.view=REK;S.sel={r:curRow(),c:1,r2:curRow(),c2:1};$("hint").innerHTML="";if(S.i>=C.length)return end();load()}
+function end(){S.stage="end";stamps(false);hud();grid();tasks();const mx=S.res.reduce((a,r)=>a+r.max,0),pct=Math.round(S.pts/mx*100);let best=0;try{best=+localStorage.getItem("mpba-xl-best")||0;if(pct>best)localStorage.setItem("mpba-xl-best",pct)}catch(e){}
+ show(`<div class="end"><h2 style="font-size:30px">Shift selesai</h2><div class="big">${pct}%</div><p style="margin:0 0 12px"><b>${S.pts}</b> dari ${mx} poin · peringkat <b>${rankOf(pct)}</b>${best?` · rekor sebelumnya ${best}%`:""}</p><table class="br">${S.res.map((r,k)=>`<tr><td class="${r.got>=r.max*.75?"y":"x"}">${k+1}. ${esc(C[k].judul)} · ${esc(C[k].kv[1][1])}</td><td>${r.got}/${r.max}</td></tr>`).join("")}</table><p style="font-size:14px;color:var(--mut)">Sheet rapel ok sekarang berisi baris yang kamu proses. Tutup kartu ini untuk melihatnya.</p><button class="go" id="again">Main lagi</button></div>`);
+ $("again").onclick=()=>{$("ov").classList.remove("on");S=fresh();load()}}
+function load(){paper();stamps(S.stage==="decide");$("hint").innerHTML=S.hint&&C[S.i]?`<div class="hint">${esc(C[S.i].aturan)}</div>`:"";render()}
+document.querySelectorAll(".stamp").forEach(b=>b.addEventListener("click",()=>decide(b.dataset.d)));
+$("bHint").onclick=()=>{if(S.stage!=="decide"&&S.stage!=="form"||S.hint)return;S.hint=true;$("hint").innerHTML=`<div class="hint">${esc(C[S.i].aturan)}</div>`};
+$("bReset").onclick=()=>{S=fresh();ED=null;INS=null;PT=null;$("ov").classList.remove("on");load()};
+$("send").onclick=submit;
+$("tl").addEventListener("click",e=>{const g=e.target.closest("[data-go]"),h=e.target.closest("[data-th]");const r=curRow();
+ if(g){if(ED)commit(false);S.view=REK;const c=CN(g.dataset.go);S.sel={r,c,r2:r,c2:c};grid();const td=gw.querySelector(`td[data-r="${r}"][data-c="${c}"]`);td&&td.scrollIntoView({block:"nearest",inline:"center"})}
+ if(h&&!S.th.includes(h.dataset.th)){S.th.push(h.dataset.th);tasks()}});
+const start=d=>{if(d&&typeof d.i==="number"&&d.frozen&&d.i<C.length){S=Object.assign(fresh(),d);if(S.stage==="post")S.stage="done";if(S.stage==="done")next();else load()}else load()};
+window.claude?.hot?.snapshot?.(()=>S);
+window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
+}
+</script>
+</body>
+</html>
